@@ -1,8 +1,8 @@
-# Step 1: Use Maven to build the application
+# Step 1: Build with Maven
 FROM maven:3.9.4-eclipse-temurin-17 AS build
 WORKDIR /app
 
-# Copy pom.xml and download dependencies (to cache layers)
+# Copy pom.xml first and download dependencies (better caching)
 COPY pom.xml .
 RUN mvn dependency:go-offline -B
 
@@ -10,16 +10,15 @@ RUN mvn dependency:go-offline -B
 COPY src ./src
 RUN mvn clean package -DskipTests
 
-# Step 2: Use a smaller JDK runtime image
+# Step 2: Run with lightweight JDK
 FROM eclipse-temurin:17-jdk-alpine
 WORKDIR /app
 
 # Copy JAR from build stage
 COPY --from=build /app/target/*.jar app.jar
 
-# Expose port 808 (as in application.properties)
+# Expose port (Render will inject PORT env var)
 EXPOSE 8080
 
-# Run the application
+# Run Spring Boot
 ENTRYPOINT ["java", "-jar", "app.jar"]
-
